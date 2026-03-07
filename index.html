@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AuditRetrib · Pay Transparency</title>
+
+  <!-- XLSX para import/export Excel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#f6f7fb; --card:#fff; --text:#0f172a; --muted:#64748b;
+      --pri:#1d4ed8; --pri2:#6c3fc5;
+      --ok:#16a34a; --warn:#f59e0b; --risk:#ef4444;
+      --border:#e2e8f0; --soft:#f8fafc;
+      --shadow:0 10px 30px rgba(16,24,40,.10);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; background:var(--bg); color:var(--text)}
+    a{color:var(--pri); text-decoration:none}
+    button{cursor:pointer;border:0;border-radius:14px;padding:10px 14px;font-weight:700}
+    button.primary{background:var(--pri);color:#fff}
+    button.purple{background:var(--pri2);color:#fff}
+    button.secondary{background:#eef2ff;color:#1e3a8a}
+    button.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    input, textarea, select{
+      width:100%; padding:10px 12px; border:1px solid var(--border);
+      border-radius:14px; background:#fff; font-size:13px;
+    }
+    textarea{min-height:76px; resize:vertical}
+    .wrap{max-width:1200px;margin:22px auto;padding:0 14px}
+    .topbar{
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+      background:var(--card); border:1px solid var(--border); border-radius:22px;
+      padding:14px 16px; box-shadow:var(--shadow);
+    }
+    .brand{display:flex; gap:12px; align-items:center}
+    .logo{font-size:22px}
+    .title{font-weight:900}
+    .subtitle{font-size:12px;color:var(--muted);margin-top:2px}
+    .pill{font-size:12px;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#3730a3;font-weight:800}
+    .grid{display:grid; grid-template-columns: 240px 1fr 300px; gap:14px; margin-top:14px}
+    .card{
+      background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+    .nav{padding:10px}
+    .nav h4{margin:8px 10px 10px 10px; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em}
+    .step{
+      display:flex; gap:10px; align-items:center; padding:10px 10px; border-radius:14px;
+      color:var(--text);
+    }
+    .step:hover{background:var(--soft)}
+    .step.active{background:#eef2ff; border:1px solid #dbeafe}
+    .step .num{
+      width:28px;height:28px;border-radius:10px;display:grid;place-items:center;
+      font-weight:900;background:var(--soft);border:1px solid var(--border)
+    }
+    .content{padding:16px}
+    .content h2{margin:0 0 6px 0;font-size:18px}
+    .content p{margin:0 0 14px 0;color:var(--muted);line-height:1.4;font-size:13px}
+    .panel{padding:16px}
+    .kpis{display:grid;grid-template-columns:1fr 1fr; gap:10px}
+    .kpi{
+      background:var(--soft); border:1px solid var(--border); border-radius:16px; padding:12px
+    }
+    .kpi .label{font-size:12px;color:var(--muted)}
+    .kpi .val{font-size:18px;font-weight:900;margin-top:4px}
+    .bar{height:10px;border-radius:999px;background:#e5e7eb; overflow:hidden}
+    .bar > div{height:100%;background:var(--pri);width:0%}
+    .section{margin-top:14px}
+    .row{display:grid;grid-template-columns:1fr 1fr; gap:10px}
+    .row3{display:grid;grid-template-columns:1fr 1fr 1fr; gap:10px}
+    .hr{height:1px;background:var(--border);margin:14px 0}
+    .filters{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px}
+    .tableWrap{border:1px solid var(--border); border-radius:16px; overflow:auto}
+    table{width:100%;border-collapse:collapse;background:#fff}
+    th, td{padding:10px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:top}
+    th{background:var(--soft); position:sticky; top:0; text-align:left}
+    .tag{display:inline-flex;align-items:center;gap:6px;font-weight:900;font-size:12px;padding:6px 10px;border-radius:999px}
+    .tag.ok{background:#dcfce7;color:#166534}
+    .tag.warn{background:#fef3c7;color:#92400e}
+    .tag.risk{background:#fee2e2;color:#991b1b}
+    .small{font-size:12px;color:var(--muted)}
+    .actions{display:flex; gap:8px; flex-wrap:wrap}
+    .modal{position:fixed; inset:0; background:rgba(2,6,23,.55); display:none; align-items:center; justify-content:center; padding:18px}
+    .modal.on{display:flex}
+    .modal .box{max-width:780px;width:100%; background:#fff; border-radius:22px; padding:18px; box-shadow:0 20px 70px rgba(0,0,0,.35)}
+    pre{white-space:pre-wrap;background:var(--soft);border:1px solid var(--border);padding:12px;border-radius:16px}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">⚖️</div>
+        <div>
+          <div class="title">AuditRetrib · Pay Transparency</div>
+          <div class="subtitle">
+            Empresa: <b id="hdrEmpresa">—</b> · Fecha: <b id="hdrFecha">—</b> · Responsable: <b id="hdrResp">—</b>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <span class="pill" id="hdrMode">Acceso libre</span>
+
+        <button class="ghost" id="btnReset">Reset</button>
+
+        <button class="secondary" id="btnXlsxExport">Exportar Excel</button>
+        <button class="secondary" id="btnXlsxImport">Importar Excel</button>
+
+        <button class="secondary" id="btnPDF">Exportar PDF</button>
+        <button class="secondary" id="btnWord">Exportar Word</button>
+
+        <button class="secondary" id="btnExport" title="Backup técnico (no recomendado para cliente)">JSON</button>
+        <button class="secondary" id="btnImport" title="Restaurar backup técnico (JSON)">Import JSON</button>
+
+        <button class="purple" id="btnIA">Generar informe IA</button>
+      </div>
+    </div>
+
+    <div class="grid">
+
+      <!-- NAV (columna izquierda) -->
+      <div class="card nav">
+        <h4>Pasos</h4>
+
+        <div class="step active" data-step="1"><div class="num">1</div><div><b>Sesión</b><div class="small">Datos del informe</div></div></div>
+        <div class="step" data-step="2"><div class="num">2</div><div><b>Auditoría</b><div class="small">Checklist y evidencias</div></div></div>
+        <div class="step" data-step="3"><div class="num">3</div><div><b>Resumen</b><div class="small">Riesgos y pendientes</div></div></div>
+        <div class="step" data-step="4"><div class="num">4</div><div><b>Acciones</b><div class="small">Plan de mejora</div></div></div>
+        <div class="step" data-step="5"><div class="num">5</div><div><b>Modelo salarial</b><div class="small">Puesto + nivel (0–5)</div></div></div>
+        <div class="step" data-step="6"><div class="num">6</div><div><b>Empleados</b><div class="small">Datos salariales</div></div></div>
+
+        <div class="hr"></div>
+        <div class="small" style="padding:0 10px 10px 10px;">
+          Consejo: empieza por marcar <b>Riesgo</b> solo cuando falte evidencia o exista incumplimiento.
+        </div>
+      </div>
+
+      <!-- CONTENT (columna central) -->
+      <div class="card content">
+
+        <!-- STEP 1 -->
+        <div class="view" id="view1">
+          <h2>1) Datos de sesión</h2>
+          <p>Estos datos aparecen en el informe y te ayudan a mantener trazabilidad de auditorías.</p>
+
+          <div class="row">
+            <div>
+              <label class="small"><b>Empresa</b></label>
+              <input id="inpEmpresa" placeholder="Ej: Empresa ABC S.L." />
+            </div>
+            <div>
+              <label class="small"><b>Fecha del informe</b></label>
+              <input id="inpFecha" placeholder="Ej: 5 de marzo de 2026" />
+            </div>
+          </div>
+
+          <div class="section">
+            <label class="small"><b>Responsable</b></label>
+            <input id="inpResp" placeholder="Nombre del auditor/a" />
+          </div>
+
+          <div class="section actions">
+            <button class="primary" id="btnSaveSession">Guardar y continuar</button>
+            <button class="ghost" id="btnGoAudit">Ir a auditoría</button>
+          </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="view" id="view2" style="display:none">
+          <h2>2) Auditoría (Checklist)</h2>
+          <p>Marca el estado y añade evidencia/nota. Usa filtros para centrarte en lo importante.</p>
+
+          <div class="filters">
+            <button class="ghost" data-filter="ALL">Todo</button>
+            <button class="ghost" data-filter="PENDING">Pendientes</button>
+            <button class="ghost" data-filter="Riesgo">Riesgo</button>
+            <button class="ghost" data-filter="Mejora">Mejora</button>
+            <button class="ghost" id="btnAddItem">+ Añadir ítem</button>
+          </div>
+
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="min-width:280px;">Requisito</th>
+                  <th style="min-width:260px;">Evidencia / Fuente</th>
+                  <th style="min-width:130px;">Estado</th>
+                  <th style="min-width:260px;">Notas / Acción</th>
+                  <th style="min-width:170px;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="section small">
+            Tip: Rellena “Evidencia” con documentos concretos (política, procedimiento, registro, URL interna).
+          </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="view" id="view3" style="display:none">
+          <h2>3) Resumen</h2>
+          <p>Visualiza rápidamente dónde están los riesgos y qué falta por completar.</p>
+
+          <div class="row3">
+            <div class="kpi">
+              <div class="label">Riesgos</div>
+              <div class="val" id="sumRisk">0</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Mejoras</div>
+              <div class="val" id="sumWarn">0</div>
+            </div>
+            <div class="kpi">
+              <div class="label">OK</div>
+              <div class="val" id="sumOK">0</div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="label small"><b>Progreso</b></div>
+            <div class="bar"><div id="progressBar"></div></div>
+            <div class="small" id="progressText" style="margin-top:6px;">0% completado</div>
+          </div>
+
+          <div class="section">
+            <h3 style="margin:10px 0 8px 0;font-size:14px;">Pendientes prioritarios</h3>
+            <div class="small" id="pendingList">—</div>
+          </div>
+        </div>
+
+        <!-- STEP 4 -->
+        <div class="view" id="view4" style="display:none">
+          <h2>4) Acciones (plan de mejora)</h2>
+          <p>Genera un plan breve de acciones a partir de riesgos/mejoras.</p>
+
+          <div class="actions">
+            <button class="purple" id="btnPlanIA">Generar plan con IA</button>
+            <button class="ghost" id="btnCopyPlan">Copiar al portapapeles</button>
+          </div>
+
+          <div class="section">
+            <pre id="planText">Pulsa “Generar plan con IA”.</pre>
+          </div>
+        </div>
+
+        <!-- STEP 5 -->
+        <div class="view" id="view5" style="display:none">
+          <h2>5) Modelo salarial (Puesto + Nivel)</h2>
+          <p>Define criterios objetivos y asigna ponderaciones (0–5) por cada combinación de puesto + nivel.</p>
+
+          <div class="row">
+            <div class="card" style="padding:12px;border-radius:16px;border:1px solid var(--border);box-shadow:none">
+              <h3 style="margin:0 0 10px 0;font-size:14px;">Criterios</h3>
+              <div class="small">Ejemplos: Responsabilidad, Complejidad, Impacto, Gestión, Mercado.</div>
+              <div class="section row">
+                <input id="critName" placeholder="Nombre del criterio (ej: Responsabilidad)" />
+                <input id="critDesc" placeholder="Descripción breve (opcional)" />
+              </div>
+              <div class="actions">
+                <button class="secondary" id="btnAddCrit">+ Añadir criterio</button>
+                <button class="ghost" id="btnResetCrit">Reset criterios</button>
+              </div>
+              <div class="section">
+                <pre id="critList" style="margin:0">—</pre>
+              </div>
+            </div>
+
+            <div class="card" style="padding:12px;border-radius:16px;border:1px solid var(--border);box-shadow:none">
+              <h3 style="margin:0 0 10px 0;font-size:14px;">Puestos y niveles</h3>
+              <div class="small">Ej: Analista → Junior/Senior | Manager → I/II/III</div>
+
+              <div class="section row">
+                <input id="roleName" placeholder="Puesto (ej: Analista)" />
+                <input id="roleLevels" placeholder="Niveles separados por coma (ej: Junior, Senior)" />
+              </div>
+              <div class="actions">
+                <button class="secondary" id="btnAddRole">+ Añadir puesto</button>
+                <button class="ghost" id="btnResetRoles">Reset puestos</button>
+              </div>
+              <div class="section">
+                <pre id="roleList" style="margin:0">—</pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+
+          <h3 style="margin:0 0 10px 0;font-size:14px;">Matriz de ponderaciones (0–5)</h3>
+          <p class="small" style="margin-top:0">
+            Selecciona un puesto + nivel y asigna pesos 0–5 por criterio.
+            El “Score” es la suma (simple) de pesos. Luego lo usaremos para explicar salario con Excel.
+          </p>
+
+          <div class="row3">
+            <div>
+              <label class="small"><b>Puesto</b></label>
+              <select id="selRole"></select>
+            </div>
+            <div>
+              <label class="small"><b>Nivel</b></label>
+              <select id="selLevel"></select>
+            </div>
+            <div>
+              <label class="small"><b>Score (suma)</b></label>
+              <input id="scoreOut" disabled value="0" />
+            </div>
+          </div>
+
+          <div class="section tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="min-width:220px">Criterio</th>
+                  <th style="min-width:120px">Peso (0–5)</th>
+                  <th style="min-width:340px">Guía</th>
+                </tr>
+              </thead>
+              <tbody id="weightTbody"></tbody>
+            </table>
+          </div>
+
+          <div class="section actions">
+            <button class="primary" id="btnSaveWeights">Guardar ponderaciones</button>
+            <button class="ghost" id="btnQuickDefaults">Cargar ejemplo</button>
+          </div>
+
+          <div class="section small">
+            Consejo: documenta por qué un nivel tiene más peso (responsabilidad, complejidad, impacto). Eso es lo que “explica” diferencias salariales.
+          </div>
+        </div>
+
+        <!-- STEP 6 -->
+        <div class="view" id="view6" style="display:none">
+          <h2>6) Empleados</h2>
+          <p>Importa un Excel de empleados y revisa la información salarial por puesto, nivel y sexo.</p>
+
+          <div class="actions" style="margin-bottom:12px;">
+            <button class="secondary" id="btnEmpImport">Importar Empleados (Excel)</button>
+            <button class="secondary" id="btnEmpExport">Exportar Empleados (Excel)</button>
+          </div>
+
+          <div class="row3">
+            <div>
+              <label class="small"><b>Filtrar por puesto</b></label>
+              <select id="empFilterRole">
+                <option value="ALL">Todos</option>
+              </select>
+            </div>
+            <div>
+              <label class="small"><b>Filtrar por nivel</b></label>
+              <select id="empFilterLevel">
+                <option value="ALL">Todos</option>
+              </select>
+            </div>
+            <div>
+              <label class="small"><b>Filtrar por sexo</b></label>
+              <select id="empFilterSexo">
+                <option value="ALL">Todos</option>
+                <option value="H">H</option>
+                <option value="M">M</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="section row3">
+            <div class="kpi">
+              <div class="label">Empleados cargados</div>
+              <div class="val" id="empCount">0</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Salario base medio</div>
+              <div class="val" id="empAvgBase">0 €</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Bonus medio</div>
+              <div class="val" id="empAvgBonus">0 €</div>
+            </div>
+          </div>
+
+          <div class="section tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Apellido</th>
+                  <th>Sexo</th>
+                  <th>Departamento</th>
+                  <th>Puesto</th>
+                  <th>Nivel</th>
+                  <th>Ubicación</th>
+                  <th>Tipo contrato</th>
+                  <th>Fecha alta</th>
+                  <th>Base salarial</th>
+                  <th>Bonus</th>
+                  <th>Total comp.</th>
+                </tr>
+              </thead>
+              <tbody id="employeesTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT PANEL (columna derecha) -->
+      <div class="card panel">
+        <h3 style="margin:0 0 10px 0;font-size:14px;">Panel de control</h3>
+        <div class="kpis">
+          <div class="kpi">
+            <div class="label">Completado</div>
+            <div class="val" id="kpiDone">0%</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Pendientes</div>
+            <div class="val" id="kpiPending">0</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Riesgo</div>
+            <div class="val" id="kpiRisk">0</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Mejora</div>
+            <div class="val" id="kpiWarn">0</div>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+        <div class="small">
+          Guardado automático en tu navegador. Exporta JSON para compartir o archivar.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL IA -->
+  <div class="modal" id="modalIA">
+    <div class="box">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <h3 style="margin:0">Informe IA</h3>
+        <button class="ghost" id="btnCloseIA">Cerrar</button>
+      </div>
+      <pre id="iaText" style="margin-top:12px;">—</pre>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
