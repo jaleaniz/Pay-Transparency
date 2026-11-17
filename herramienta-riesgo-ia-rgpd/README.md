@@ -7,7 +7,11 @@ Elaborado por otraforma.
 ## Uso
 
 1. Abre `index.html` en cualquier navegador moderno (doble clic sobre el archivo).
-2. Fase 1, Cliente: datos de la evaluación, DPD, RLT, alcance.
+2. Fase 1, Cliente: alcance del análisis, datos de la evaluación, DPD, RLT.
+   - Alcance "Completo": 8 dimensiones, 47 controles e inventario de IA.
+   - Alcance "Solo protección de datos": 6 dimensiones y 28 controles del RGPD y la LOPDGDD. Se ocultan el inventario de IA, las dos dimensiones de IA y los controles específicos de herramientas de IA. El informe se titula "tratamiento de datos personales".
+   - Alcance "Solo uso de IA": inventario de IA, las dos dimensiones del Reglamento de IA y los 15 controles del RGPD vinculados al uso de IA (31 controles en total).
+   - Cambiar de alcance no borra respuestas: los controles ocultos se conservan.
 3. Fase 2, Inventario IA: registra cada sistema de IA en uso. La herramienta propone la clasificación según el Reglamento de IA y señala los efectos en el RGPD (RAT, EIPD, art. 22, art. 28, transferencias).
 4. Fase 3, Cuestionario: 47 controles en 8 dimensiones. Responde con evidencia: Sí, Parcial, No o No aplica. Cada control admite una nota.
 5. Fase 4, Resultados: riesgo global y por dimensión, alertas críticas, mapa probabilidad × impacto, clasificación de sistemas y plan de acción priorizado con referencia normativa y plazo.
