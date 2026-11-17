@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Radar IA y Datos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: una barra de navegación por fases arriba, una columna de trabajo centrada (max 1080px) y un informe imprimible al final. Marca otraforma: crema, tinta oscura, sin fondos azules ni oscuros. */
+:root {
+  --bg: #F7F3EC;          /* crema otraforma */
+  --bg-2: #EFE9DE;        /* crema más densa para bandas */
+  --surface: #FFFDF9;     /* superficie de tarjetas */
+  --ink: #1E1B17;         /* tinta principal */
+  --ink-2: #5A544B;       /* tinta secundaria */
+  --ink-3: #8C857A;       /* tinta atenuada */
+  --line: #DCD4C6;        /* reglas y bordes */
+  --accent: #6B5A2E;      /* bronce oscuro: acciones y énfasis */
+  --accent-soft: #E8DFC9;
+  --ok: #1F7A48;   --ok-bg: #DFEDE4;
+  --warn: #B99600; --warn-bg: #F3E9C6;
+  --high: #C7461F; --high-bg: #F6DECB;
+  --crit: #8E1B1B; --crit-bg: #F2D4D4;
+  --seq-1: #EFE6D2; --seq-2: #D9C79A; --seq-3: #B89B5A; --seq-4: #8A6E33; --seq-5: #5C4820;
+  --font-display: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; line-height: 1.2; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: 1.9rem; } h2 { font-size: 1.35rem; } h3 { font-size: 1.08rem; } h4 { font-size: 0.95rem; }
+p { margin: 0; }
+a { color: var(--accent); }
+button, input, select, textarea { font: inherit; color: inherit; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { background: var(--bg-2); border-bottom: 1px solid var(--line); }
+header.top .wrap { padding-block: 22px 16px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.brand { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.72rem; color: var(--accent); }
+.sub { color: var(--ink-2); max-width: 60ch; }
+nav.tabs { background: var(--bg-2); border-bottom: 1px solid var(--line); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; }
+nav.tabs .wrap { display: flex; gap: 2px; overflow-x: auto; padding-block: 0; }
+nav.tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 12px 14px; color: var(--ink-2); font-weight: 500; white-space: nowrap; cursor: pointer; }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+nav.tabs button:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+main .wrap { padding-block: 28px 56px; display: grid; gap: 28px; }
+section.panel { display: grid; gap: 18px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; display: grid; gap: 12px; min-width: 0; }
+.grid { display: grid; gap: 14px; }
+.grid.two { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.grid.three { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+label.f { display: grid; gap: 5px; font-size: 0.86rem; color: var(--ink-2); font-weight: 500; min-width: 0; }
+label.f input, label.f select, label.f textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); font-size: 0.95rem; }
+label.f textarea { min-height: 64px; resize: vertical; }
+label.chk { display: flex; gap: 8px; align-items: flex-start; font-size: 0.9rem; color: var(--ink); }
+label.chk input { margin-top: 3px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 7px; border: 1px solid var(--accent); background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn.danger { border-color: var(--crit); color: var(--crit); background: transparent; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.eyebrow { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-3); font-weight: 600; }
+.muted { color: var(--ink-2); font-size: 0.9rem; }
+.small { font-size: 0.82rem; color: var(--ink-3); }
+.ref { font-size: 0.78rem; color: var(--ink-3); }
+hr.sep { border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
+
+/* Cuestionario */
+.dim { border-left: 4px solid var(--accent-soft); }
+.q { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; padding: 12px 0; border-top: 1px solid var(--line); align-items: start; }
+.q:first-of-type { border-top: 0; }
+.q .txt { min-width: 0; display: grid; gap: 3px; }
+.q .opts { display: flex; gap: 4px; flex-wrap: wrap; }
+.q .opts button { border: 1px solid var(--line); background: #fff; padding: 6px 10px; border-radius: 6px; font-size: 0.82rem; cursor: pointer; color: var(--ink-2); }
+.q .opts button[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); background: var(--accent-soft); font-weight: 600; }
+.q .opts button.o-si[aria-pressed="true"] { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+.q .opts button.o-parcial[aria-pressed="true"] { background: var(--warn-bg); border-color: var(--warn); color: var(--warn); }
+.q .opts button.o-no[aria-pressed="true"] { background: var(--crit-bg); border-color: var(--crit); color: var(--crit); }
+.q textarea.note { grid-column: 1 / -1; width: 100%; min-height: 40px; padding: 6px 8px; border: 1px dashed var(--line); border-radius: 6px; background: transparent; font-size: 0.85rem; resize: vertical; }
+.imp { display: inline-block; font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--ink-3); margin-left: 6px; vertical-align: middle; }
+.progress { height: 6px; background: var(--accent-soft); border-radius: 3px; overflow: hidden; }
+.progress i { display: block; height: 100%; background: var(--accent); }
+
+/* Resultados */
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; border: 1px solid; }
+.pill.bajo { color: var(--ok); background: var(--ok-bg); border-color: var(--ok); }
+.pill.medio { color: var(--warn); background: var(--warn-bg); border-color: var(--warn); }
+.pill.alto { color: var(--high); background: var(--high-bg); border-color: var(--high); }
+.pill.muy-alto { color: var(--crit); background: var(--crit-bg); border-color: var(--crit); }
+.pill.na { color: var(--ink-3); background: var(--bg-2); border-color: var(--line); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; }
+.tile .n { font-family: var(--font-display); font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.bars { display: grid; gap: 10px; }
+.bar { display: grid; grid-template-columns: minmax(140px, 1.2fr) 3fr auto; gap: 10px; align-items: center; font-size: 0.9rem; }
+.bar .track { height: 14px; background: var(--bg-2); border-radius: 4px; overflow: hidden; }
+.bar .track i { display: block; height: 100%; border-radius: 0 4px 4px 0; }
+.bar .track i.bajo { background: var(--ok); } .bar .track i.medio { background: var(--warn); } .bar .track i.alto { background: var(--high); } .bar .track i.muy-alto { background: var(--crit); }
+.bar .v { font-variant-numeric: tabular-nums; min-width: 3ch; text-align: right; font-weight: 600; }
+.matrix { display: grid; grid-template-columns: auto repeat(3, minmax(0, 1fr)); gap: 4px; max-width: 460px; font-size: 0.82rem; }
+.matrix .h { color: var(--ink-3); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: center; justify-content: center; padding: 4px; text-align: center; }
+.matrix .c { min-height: 64px; padding: 8px 4px; border-radius: 6px; display: grid; place-items: center; font-variant-numeric: tabular-nums; font-weight: 600; border: 1px solid var(--line); }
+.matrix .c span { font-size: 0.68rem; font-weight: 500; color: var(--ink-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.78rem; color: var(--ink-2); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; border: 1px solid var(--line); }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { text-align: left; padding: 8px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+th { color: var(--ink-3); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; border-top: 0; }
+.tbl { overflow-x: auto; }
+.alert { display: grid; gap: 4px; padding: 12px 14px; border-radius: 8px; border: 1px solid; }
+.alert.crit { border-color: var(--crit); background: var(--crit-bg); }
+.alert.high { border-color: var(--high); background: var(--high-bg); }
+.alert.warn { border-color: var(--warn); background: var(--warn-bg); }
+.alert.info { border-color: var(--line); background: var(--bg-2); }
+.alert b { font-weight: 600; }
+.sys { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 12px; }
+.sys:first-of-type { border-top: 0; padding-top: 0; }
+.sys .head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: center; }
+.sys .flags { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 6px 14px; }
+.sys .prohib { background: var(--bg-2); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; }
+.cls { display: flex; flex-wrap: wrap; gap: 6px; }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 0.85rem; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 20; }
+.toast.show { opacity: 1; }
+
+/* Informe */
+#informe { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 32px 36px; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 10pt; line-height: 1.5; text-align: justify; display: grid; gap: 14px; }
+#informe h2, #informe h3 { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; text-align: left; }
+#informe h2 { font-size: 15pt; margin-top: 10px; } #informe h3 { font-size: 11.5pt; margin-top: 6px; }
+#informe table { font-size: 9pt; }
+#informe .foot { border-top: 1px solid var(--line); padding-top: 10px; color: var(--ink-2); font-size: 8.5pt; text-align: left; }
+#informe ul { margin: 0; padding-left: 18px; }
+@media (max-width: 640px) {
+  .q { grid-template-columns: 1fr; }
+  .bar { grid-template-columns: 1fr; gap: 4px; }
+  .bar .v { text-align: left; }
+  #informe { padding: 20px 16px; }
+}
+@media print {
+  header.top, nav.tabs, .no-print, main > .wrap > section:not(#tab-informe) { display: none !important; }
+  body { background: #fff; }
+  main .wrap { padding: 0; }
+  #informe { border: 0; padding: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div>
+      <div class="brand">otraforma · herramienta de análisis</div>
+      <h1>Radar IA y Datos</h1>
+      <p class="sub">Análisis de riesgo del uso de inteligencia artificial y del tratamiento de datos personales conforme al RGPD, la LOPDGDD y el Reglamento de IA.</p>
+    </div>
+    <div class="row no-print">
+      <button class="btn ghost" id="btn-nueva" type="button">Nueva evaluación</button>
+      <button class="btn ghost" id="btn-exportar" type="button">Exportar JSON</button>
+      <label class="btn ghost" for="file-importar" style="cursor:pointer">Importar JSON<input id="file-importar" type="file" accept="application/json" hidden></label>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Fases">
+  <div class="wrap" role="tablist">
+    <button role="tab" data-tab="cliente" aria-selected="true" type="button">1 · Cliente</button>
+    <button role="tab" data-tab="inventario" aria-selected="false" type="button">2 · Inventario IA</button>
+    <button role="tab" data-tab="cuestionario" aria-selected="false" type="button">3 · Cuestionario</button>
+    <button role="tab" data-tab="resultados" aria-selected="false" type="button">4 · Resultados</button>
+    <button role="tab" data-tab="informe" aria-selected="false" type="button">5 · Informe</button>
+    <button role="tab" data-tab="metodologia" aria-selected="false" type="button">Metodología</button>
+  </div>
+</nav>
+
+<main><div class="wrap">
+
+<!-- 1 · CLIENTE -->
+<section class="panel" id="tab-cliente">
+  <div class="card">
+    <div class="eyebrow">Fase 1</div>
+    <h2>Datos de la evaluación</h2>
+    <p class="muted">Los datos se guardan solo en este navegador. Para conservar una evaluación o llevarla a otro equipo, usa "Exportar JSON". No se envía nada a ningún servidor.</p>
+    <div class="grid two">
+      <label class="f">Cliente (razón social)<input id="m-cliente" placeholder="Ej. Talleres Norte, S.L."></label>
+      <label class="f">Sector de actividad<input id="m-sector" placeholder="Ej. Industria, servicios, sanidad, educación"></label>
+      <label class="f">Número de empleados<select id="m-tamano">
+        <option value="">Selecciona</option><option value="1-9">1 a 9</option><option value="10-49">10 a 49</option><option value="50-249">50 a 249</option><option value="250+">250 o más</option></select></label>
+      <label class="f">¿Tiene Delegado de Protección de Datos?<select id="m-dpd">
+        <option value="">Selecciona</option><option value="si">Sí, designado y comunicado a la AEPD</option><option value="no-obl">No, y no parece obligatorio</option><option value="no-dudoso">No, y puede ser obligatorio (art. 34 LOPDGDD)</option></select></label>
+      <label class="f">¿Tiene representación legal de los trabajadores (RLT)?<select id="m-rlt">
+        <option value="">Selecciona</option><option value="si">Sí</option><option value="no">No</option></select></label>
+      <label class="f">Persona evaluadora<input id="m-evaluador" placeholder="Nombre"></label>
+      <label class="f">Fecha de la evaluación<input id="m-fecha" type="date"></label>
+      <label class="f">Interlocutor en el cliente<input id="m-interlocutor" placeholder="Nombre y cargo"></label>
+    </div>
+    <label class="f">Contexto y alcance (qué áreas, qué procesos, qué se excluye)<textarea id="m-alcance" placeholder="Ej. Se analiza el uso de IA generativa en marketing y RRHH y los tratamientos asociados. Se excluye el ERP."></textarea></label>
+    <div class="row no-print"><button class="btn" type="button" data-go="inventario">Siguiente: inventario de IA</button></div>
+  </div>
+</section>
+
+<!-- 2 · INVENTARIO -->
+<section class="panel" id="tab-inventario" hidden>
+  <div class="card">
+    <div class="eyebrow">Fase 2</div>
+    <h2>Inventario y clasificación de sistemas de IA</h2>
+    <p class="muted">Registra cada sistema o herramienta de IA en uso, incluidas las de uso individual por el personal (asistentes generativos, extensiones, chatbots). La herramienta propone una clasificación según el Reglamento (UE) 2024/1689 y señala los efectos en el RGPD. La clasificación es una propuesta que debe validar la persona evaluadora.</p>
+    <div id="systems"></div>
+    <div class="row no-print"><button class="btn" id="btn-add-sys" type="button">Añadir sistema</button><button class="btn ghost" type="button" data-go="cuestionario">Siguiente: cuestionario</button></div>
+  </div>
+</section>
+
+<!-- 3 · CUESTIONARIO -->
+<section class="panel" id="tab-cuestionario" hidden>
+  <div class="card">
+    <div class="eyebrow">Fase 3</div>
+    <h2>Cuestionario de controles</h2>
+    <p class="muted">Cada pregunta es un control. Responde según la evidencia que aporte el cliente, no según lo que declare. "No aplica" excluye la pregunta del cálculo. La etiqueta de impacto indica la gravedad para los derechos de las personas si el control falla.</p>
+    <div class="progress" aria-hidden="true"><i id="prog" style="width:0%"></i></div>
+    <p class="small" id="prog-txt">0 de 0 respondidas</p>
+  </div>
+  <div id="questions"></div>
+  <div class="row no-print"><button class="btn" type="button" data-go="resultados">Ver resultados</button></div>
+</section>
+
+<!-- 4 · RESULTADOS -->
+<section class="panel" id="tab-resultados" hidden>
+  <div class="card">
+    <div class="eyebrow">Fase 4</div>
+    <h2>Resultados</h2>
+    <div class="tiles" id="tiles"></div>
+  </div>
+  <div class="card">
+    <h3>Alertas críticas</h3>
+    <p class="muted">Situaciones que requieren actuación inmediata o una decisión jurídica, con independencia de la puntuación global.</p>
+    <div class="grid" id="alerts"></div>
+  </div>
+  <div class="card">
+    <h3>Nivel de riesgo por dimensión</h3>
+    <p class="muted">Puntuación de 0 a 100: media de probabilidad × impacto de los controles aplicables, normalizada. Cuanto más alta, más riesgo.</p>
+    <div class="bars" id="bars"></div>
+    <div class="legend"><span><i style="background:var(--ok)"></i>Bajo, menos de 25</span><span><i style="background:var(--warn)"></i>Medio, 25 a 49</span><span><i style="background:var(--high)"></i>Alto, 50 a 74</span><span><i style="background:var(--crit)"></i>Muy alto, 75 o más</span></div>
+  </div>
+  <div class="grid two">
+    <div class="card">
+      <h3>Mapa de riesgos</h3>
+      <p class="muted">Número de controles en cada celda probabilidad × impacto. Las celdas de la esquina superior derecha concentran las prioridades.</p>
+      <div class="matrix" id="matrix"></div>
+    </div>
+    <div class="card">
+      <h3>Clasificación de los sistemas de IA</h3>
+      <div class="tbl"><table id="sys-table"><thead><tr><th>Sistema</th><th>Reglamento de IA</th><th>RGPD</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Plan de acción priorizado</h3>
+    <p class="muted">Controles con deficiencias, ordenados por riesgo. El plazo es orientativo: inmediato (riesgo 9), 30 días (6), 90 días (resto).</p>
+    <div class="tbl"><table id="plan"><thead><tr><th>#</th><th>Riesgo</th><th>Acción</th><th>Referencia</th><th>Plazo</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</section>
+
+<!-- 5 · INFORME -->
+<section class="panel" id="tab-informe" hidden>
+  <div class="row no-print">
+    <button class="btn" id="btn-copiar" type="button">Copiar informe (texto)</button>
+    <button class="btn ghost" id="btn-imprimir" type="button">Imprimir o guardar PDF</button>
+    <span class="small">La impresión funciona al abrir el archivo HTML directamente en el navegador. Dentro de claude.ai, usa "Copiar informe" y pégalo en un documento.</span>
+  </div>
+  <article id="informe"></article>
+</section>
+
+<!-- METODOLOGÍA -->
+<section class="panel" id="tab-metodologia" hidden>
+  <div class="card">
+    <h2>Metodología</h2>
+    <h3>1. Cálculo del riesgo</h3>
+    <p>Cada control del cuestionario tiene asignado un impacto fijo (1 bajo, 2 medio, 3 alto) según la gravedad para los derechos y libertades de las personas si el control falla. La respuesta determina la probabilidad: "No" equivale a probabilidad alta (3), "Parcial" a media (2) y "Sí" a baja (1). El riesgo de cada control es probabilidad × impacto (de 1 a 9), siguiendo el enfoque de la guía de la AEPD <em>Gestión del riesgo y evaluación de impacto en tratamientos de datos personales</em> (2021). La puntuación de cada dimensión es la media de los riesgos de sus controles aplicables, llevada a una escala de 0 a 100. La global es la media de las dimensiones con al menos un control respondido.</p>
+    <h3>2. Niveles</h3>
+    <p>Bajo (menos de 25): mantener y revisar anualmente. Medio (25 a 49): plan de mejora en 90 días. Alto (50 a 74): plan en 30 días y revisión por la dirección. Muy alto (75 o más): actuación inmediata y valoración de consulta jurídica o del DPD.</p>
+    <h3>3. Alertas críticas</h3>
+    <p>Son reglas que no dependen de la puntuación: práctica prohibida por el art. 5 del Reglamento de IA, sistema de alto riesgo sin obligaciones del art. 26, tratamiento que exige EIPD sin realizarla (art. 35 RGPD), decisiones automatizadas sin intervención humana (art. 22 RGPD), transferencias internacionales sin garantías (capítulo V RGPD), categorías especiales sin excepción del art. 9.2, proveedor de IA sin contrato del art. 28 o posible obligación de DPD no atendida (art. 34 LOPDGDD).</p>
+    <h3>4. Clasificación de sistemas de IA</h3>
+    <p>Práctica prohibida (art. 5) si el sistema realiza alguna de las prácticas marcadas. Alto riesgo (art. 6.2 y Anexo III) si su finalidad está en los ámbitos del Anexo III: biometría, infraestructuras críticas, educación, empleo y gestión de trabajadores, acceso a servicios esenciales y crédito, seguros de vida y salud, aplicación de la ley, migración o justicia. Obligaciones de transparencia (art. 50) si interactúa con personas o genera contenido sintético. Riesgo mínimo en el resto. Los asistentes generativos de propósito general se tratan como sistemas basados en modelos de uso general: las obligaciones del modelo recaen en su proveedor y el cliente actúa como responsable del despliegue.</p>
+    <h3>5. Marco normativo y fechas</h3>
+    <ul class="muted">
+      <li>Reglamento (UE) 2016/679 (RGPD) y Ley Orgánica 3/2018 (LOPDGDD).</li>
+      <li>Reglamento (UE) 2024/1689 (Reglamento de IA). Prohibiciones y alfabetización en IA aplicables desde el 2 de febrero de 2025. Obligaciones de modelos de uso general desde el 2 de agosto de 2025. Transparencia del art. 50 desde el 2 de agosto de 2026.</li>
+      <li>Alto riesgo: según el Reglamento (UE) 2026/1744 (paquete "Ómnibus digital"), las obligaciones de los sistemas del Anexo III se aplican desde el 2 de diciembre de 2027 y las del Anexo I desde el 2 de agosto de 2028. <strong>Verificar el texto consolidado en EUR-Lex antes de citarlo en un entregable.</strong></li>
+      <li>Proyecto de Ley Orgánica para el buen uso y la gobernanza de la inteligencia artificial (expediente 121/000096, Congreso de los Diputados), en tramitación en noviembre de 2026. Designa a la AESIA como autoridad y prevé el régimen sancionador nacional. No es ley vigente.</li>
+      <li>Estatuto de los Trabajadores, art. 64.4.d (información a la RLT sobre algoritmos que afectan a condiciones de trabajo) y art. 20 bis; LOPDGDD arts. 87 a 91 (derechos digitales en el ámbito laboral).</li>
+      <li>Guías de la AEPD: adecuación al RGPD de tratamientos que incorporan IA (2020), gestión del riesgo y EIPD (2021), orientaciones sobre IA agéntica (2026). Directrices del CEPD sobre decisiones automatizadas (WP251) y sobre EIPD (WP248).</li>
+    </ul>
+    <h3>6. Límites</h3>
+    <p>La herramienta produce una evaluación preliminar de riesgo y un plan de acción. No sustituye una EIPD formal, el dictamen de un abogado ni el criterio del DPD cuando el caso lo exija. Las sanciones máximas que se citan son las del art. 83 RGPD (hasta 20 millones de euros o el 4 % de la facturación global) y del art. 99 del Reglamento de IA (hasta 35 millones o el 7 % por prácticas prohibidas; 15 millones o el 3 % por otras obligaciones).</p>
+  </div>
+</section>
+
+</div></main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+'use strict';
+/* ===================== BANCO DE CONTROLES ===================== */
+const DIMENSIONES = [
+  { id: 'gob', nombre: 'Gobernanza y responsabilidad proactiva', ref: 'Arts. 5.2, 24, 30, 37 a 39 RGPD; art. 34 LOPDGDD', q: [
+    { id:'g1', t:'Existe un registro de actividades de tratamiento completo y actualizado que incluye los tratamientos en los que interviene IA.', ref:'Art. 30 RGPD', imp:3, acc:'Elaborar o actualizar el registro de actividades de tratamiento incorporando cada tratamiento con IA: finalidad, base jurídica, categorías, destinatarios, transferencias, plazos y medidas.' },
+    { id:'g2', t:'Hay una política de protección de datos aprobada por la dirección, comunicada al personal y revisada en los últimos dos años.', ref:'Art. 24 RGPD', imp:2, acc:'Aprobar y difundir una política de protección de datos con responsables, procedimientos y calendario de revisión.' },
+    { id:'g3', t:'Se ha analizado si es obligatorio designar un Delegado de Protección de Datos y, en su caso, está designado y comunicado a la AEPD.', ref:'Art. 37 RGPD; art. 34 LOPDGDD', imp:3, acc:'Documentar el análisis de obligatoriedad del DPD (lista del art. 34 LOPDGDD) y, si procede, designarlo y comunicarlo a la AEPD.' },
+    { id:'g4', t:'Existe un análisis de riesgos documentado para los tratamientos de datos personales, revisado al incorporar nuevas herramientas de IA.', ref:'Arts. 24 y 32 RGPD; guía AEPD de gestión del riesgo', imp:2, acc:'Realizar un análisis de riesgos por tratamiento y fijar su revisión cada vez que se adopte una herramienta de IA.' },
+    { id:'g5', t:'El personal recibe formación periódica en protección de datos y existe constancia de ella.', ref:'Art. 39.1.b RGPD', imp:2, acc:'Planificar formación anual en protección de datos con registro de asistencia y contenidos.' },
+    { id:'g6', t:'Todo el personal con acceso a datos ha firmado el deber de confidencialidad.', ref:'Art. 5 LOPDGDD; art. 32.4 RGPD', imp:2, acc:'Recabar y archivar los compromisos de confidencialidad de todo el personal, incluidos becarios y colaboradores.' },
+  ]},
+  { id:'lic', nombre:'Licitud, información y finalidad', ref:'Arts. 5, 6, 7, 9, 13 y 14 RGPD; art. 11 LOPDGDD', q: [
+    { id:'l1', t:'Cada tratamiento tiene identificada y documentada su base jurídica, incluidos los que se apoyan en IA.', ref:'Art. 6 RGPD', imp:3, acc:'Asignar y documentar la base jurídica de cada tratamiento; revisar las que se apoyan en interés legítimo con una ponderación escrita.' },
+    { id:'l2', t:'Las cláusulas informativas (empleados, clientes, candidatos, web) están completas y mencionan el uso de IA cuando afecta al tratamiento.', ref:'Arts. 13 y 14 RGPD; art. 11 LOPDGDD', imp:2, acc:'Revisar las cláusulas informativas por colectivo e incorporar la información sobre tratamientos con IA, perfilado y decisiones automatizadas.' },
+    { id:'l3', t:'Cuando la base es el consentimiento, es libre, específico, informado, inequívoco y fácil de retirar, y se conserva prueba.', ref:'Arts. 4.11 y 7 RGPD', imp:3, acc:'Rediseñar los mecanismos de consentimiento y su registro; eliminar casillas premarcadas y consentimientos genéricos.' },
+    { id:'l4', t:'Los datos no se reutilizan para fines incompatibles con los originales, incluido el entrenamiento o la mejora de modelos de IA.', ref:'Arts. 5.1.b y 6.4 RGPD', imp:3, acc:'Analizar la compatibilidad de cualquier uso secundario de datos (entrenamiento, analítica) y, si no es compatible, buscar base jurídica propia o excluirlo.' },
+    { id:'l5', t:'Se aplica la minimización y existen plazos de conservación definidos y ejecutados, también para prompts, registros y salidas de las herramientas de IA.', ref:'Art. 5.1.c y e RGPD', imp:2, acc:'Definir plazos de conservación por tratamiento, incluidos los registros de uso de IA, y aplicar el borrado.' },
+    { id:'l6', t:'Si se tratan categorías especiales (salud, biometría, afiliación sindical, etc.), se ha identificado la excepción aplicable del art. 9.2.', ref:'Art. 9 RGPD; art. 9 LOPDGDD', imp:3, acc:'Identificar la excepción del art. 9.2 para cada tratamiento de categorías especiales o cesar el tratamiento.' },
+  ]},
+  { id:'enc', nombre:'Encargados, proveedores de IA y transferencias', ref:'Art. 28 y capítulo V RGPD; art. 25 LOPDGDD', q: [
+    { id:'e1', t:'Existe contrato o cláusulas del art. 28 con todos los encargados, incluidos los proveedores de herramientas de IA y SaaS.', ref:'Art. 28.3 RGPD', imp:3, acc:'Inventariar los proveedores con acceso a datos y formalizar el contrato del art. 28 con los que no lo tengan.' },
+    { id:'e2', t:'Antes de contratar un proveedor de IA se verifican sus garantías (seguridad, ubicación, certificaciones, condiciones de uso de datos).', ref:'Art. 28.1 RGPD', imp:2, acc:'Implantar un procedimiento de diligencia previa a la contratación de proveedores de IA con lista de comprobación.' },
+    { id:'e3', t:'Los subencargados están autorizados y listados, y se recibe aviso de los cambios.', ref:'Art. 28.2 y 28.4 RGPD', imp:2, acc:'Solicitar a cada proveedor la lista de subencargados y fijar el mecanismo de autorización de cambios.' },
+    { id:'e4', t:'Las transferencias internacionales están identificadas y amparadas (decisión de adecuación, cláusulas tipo con evaluación, normas corporativas).', ref:'Arts. 44 a 49 RGPD', imp:3, acc:'Mapear los flujos a terceros países de cada herramienta de IA y documentar el instrumento de transferencia y, si procede, la evaluación de impacto de la transferencia.' },
+    { id:'e5', t:'Los contratos con proveedores de IA regulan el no uso de los datos para entrenar modelos, la retención de prompts y salidas, y la ubicación del tratamiento.', ref:'Arts. 28 y 5.1.b RGPD', imp:3, acc:'Revisar las condiciones de cada proveedor de IA y activar las opciones de no entrenamiento y retención cero; documentarlo.' },
+  ]},
+  { id:'seg', nombre:'Seguridad y brechas', ref:'Arts. 32 a 34 RGPD', q: [
+    { id:'s1', t:'Las medidas técnicas y organizativas están documentadas y son proporcionales al riesgo de los tratamientos.', ref:'Art. 32 RGPD', imp:3, acc:'Documentar las medidas de seguridad por tratamiento y revisarlas tras el análisis de riesgos.' },
+    { id:'s2', t:'Las herramientas de IA corporativas tienen control de acceso, cuentas nominativas, doble factor y principio de mínimo privilegio.', ref:'Art. 32 RGPD', imp:2, acc:'Configurar las herramientas de IA con cuentas corporativas nominativas, doble factor y permisos por rol; eliminar cuentas compartidas.' },
+    { id:'s3', t:'Existe un procedimiento de gestión de brechas que permite notificar a la AEPD en 72 horas y a los afectados cuando proceda.', ref:'Arts. 33 y 34 RGPD', imp:3, acc:'Aprobar un procedimiento de brechas con roles, plantilla de notificación y criterios de valoración del riesgo.' },
+    { id:'s4', t:'Se lleva un registro interno de todas las brechas, también de las no notificadas.', ref:'Art. 33.5 RGPD', imp:2, acc:'Abrir y mantener el registro interno de brechas de seguridad.' },
+    { id:'s5', t:'Hay copias de seguridad verificadas y un plan de continuidad que cubre los sistemas con datos personales.', ref:'Art. 32.1.c RGPD', imp:2, acc:'Implantar copias de seguridad con pruebas de restauración periódicas.' },
+  ]},
+  { id:'der', nombre:'Derechos y decisiones automatizadas', ref:'Arts. 12 a 22 RGPD', q: [
+    { id:'d1', t:'Existe un procedimiento para atender los derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad en el plazo de un mes.', ref:'Arts. 12 a 20 RGPD', imp:2, acc:'Definir el procedimiento de atención de derechos con canal, plazos, plantillas y registro.' },
+    { id:'d2', t:'Están identificadas las decisiones basadas únicamente en tratamiento automatizado que producen efectos jurídicos o afectan significativamente a las personas.', ref:'Art. 22 RGPD', imp:3, acc:'Inventariar los procesos en los que una herramienta decide o filtra sin intervención humana real y evaluar si encajan en el art. 22.' },
+    { id:'d3', t:'En esas decisiones hay intervención humana significativa y la persona puede expresar su punto de vista e impugnar la decisión.', ref:'Art. 22.3 RGPD; directrices WP251', imp:3, acc:'Introducir revisión humana con capacidad real de cambiar el resultado y un canal de impugnación para las decisiones automatizadas.' },
+    { id:'d4', t:'Se informa de la existencia de decisiones automatizadas, de la lógica aplicada y de sus consecuencias.', ref:'Arts. 13.2.f, 14.2.g y 15.1.h RGPD', imp:2, acc:'Añadir a las cláusulas informativas y a las respuestas de acceso la información sobre la lógica y consecuencias de las decisiones automatizadas.' },
+    { id:'d5', t:'La elaboración de perfiles está identificada, informada y permite el derecho de oposición.', ref:'Arts. 4.4 y 21 RGPD', imp:2, acc:'Documentar los perfilados (marketing, scoring, segmentación) e implantar el derecho de oposición.' },
+  ]},
+  { id:'eipd', nombre:'Evaluación de impacto y diseño', ref:'Arts. 25, 35 y 36 RGPD', q: [
+    { id:'p1', t:'Se ha analizado para cada tratamiento con IA si procede una evaluación de impacto, aplicando los criterios del art. 35.3 y las listas de la AEPD.', ref:'Art. 35.3 y 35.4 RGPD', imp:3, acc:'Pasar cada tratamiento con IA por la lista de la AEPD de tratamientos que requieren EIPD y documentar la conclusión.' },
+    { id:'p2', t:'Se ha realizado la EIPD en los tratamientos de alto riesgo (perfilado, biometría, vigilancia, categorías especiales a gran escala, nuevas tecnologías).', ref:'Art. 35 RGPD', imp:3, acc:'Realizar la EIPD de los tratamientos de alto riesgo antes de iniciarlos o continuar con ellos; incluir necesidad, proporcionalidad, riesgos y medidas.' },
+    { id:'p3', t:'Si el riesgo residual sigue siendo alto tras la EIPD, se ha consultado previamente a la AEPD.', ref:'Art. 36 RGPD', imp:2, acc:'Valorar la consulta previa a la AEPD en los tratamientos con riesgo residual alto.' },
+    { id:'p4', t:'La protección de datos desde el diseño y por defecto se aplica al elegir y configurar las herramientas de IA (opciones de privacidad, minimización, retención).', ref:'Art. 25 RGPD', imp:2, acc:'Incluir criterios de privacidad desde el diseño en la selección y configuración de herramientas de IA y documentar la configuración elegida.' },
+  ]},
+  { id:'ia', nombre:'Gobernanza de la IA (Reglamento de IA)', ref:'Arts. 4, 5, 6, 25, 26, 27 y 50 Reglamento (UE) 2024/1689', q: [
+    { id:'a1', t:'Existe un inventario de todos los sistemas de IA en uso, con finalidad, proveedor, datos tratados y personas afectadas.', ref:'Base de los arts. 4, 26 y 50 RIA', imp:3, acc:'Completar el inventario de sistemas de IA (fase 2 de esta herramienta) y mantenerlo como registro vivo.' },
+    { id:'a2', t:'Cada sistema está clasificado por nivel de riesgo (prohibido, alto riesgo, transparencia, mínimo) con la justificación por escrito.', ref:'Arts. 5 y 6 y Anexo III RIA', imp:3, acc:'Clasificar cada sistema con la referencia al artículo o anexo que lo justifica y revisarla ante cambios de uso.' },
+    { id:'a3', t:'Se ha verificado que ningún sistema realiza prácticas prohibidas (manipulación, explotación de vulnerabilidades, puntuación social, reconocimiento de emociones en el trabajo, etc.).', ref:'Art. 5 RIA, aplicable desde el 2 de febrero de 2025', imp:3, acc:'Revisar cada sistema frente a la lista del art. 5 y retirar de inmediato cualquier práctica prohibida.' },
+    { id:'a4', t:'El personal que usa o supervisa sistemas de IA ha recibido formación de alfabetización en IA adecuada a su función.', ref:'Art. 4 RIA, aplicable desde el 2 de febrero de 2025', imp:2, acc:'Diseñar e impartir un programa de alfabetización en IA por perfiles (usuarios, supervisores, dirección) y dejar constancia.' },
+    { id:'a5', t:'Existe una política interna de uso de IA aprobada y comunicada (herramientas permitidas, datos que no pueden introducirse, revisión de resultados, responsabilidades).', ref:'Arts. 4 y 26 RIA; art. 24 RGPD', imp:2, acc:'Aprobar una política de uso de IA con herramientas autorizadas, prohibiciones, revisión humana de salidas y régimen disciplinario.' },
+    { id:'a6', t:'Está determinado el papel de la empresa respecto de cada sistema (proveedor o responsable del despliegue), y se ha valorado si lo modifica sustancialmente o lo comercializa con marca propia.', ref:'Arts. 3 y 25 RIA', imp:2, acc:'Documentar el rol frente a cada sistema; si se modifica sustancialmente o se pone marca propia, asumir las obligaciones de proveedor.' },
+    { id:'a7', t:'Para los sistemas de alto riesgo se cumplen las obligaciones del responsable del despliegue: uso según instrucciones, supervisión humana competente, conservación de registros, información a trabajadores y RLT antes de su puesta en servicio.', ref:'Art. 26 RIA (fecha de aplicación según Reglamento 2026/1744)', imp:3, acc:'Preparar el cumplimiento del art. 26 para cada sistema de alto riesgo: instrucciones del proveedor, persona supervisora designada, registros y comunicación previa a la plantilla y a la RLT.' },
+    { id:'a8', t:'Cuando un sistema interactúa con personas o genera contenido sintético, se informa de ello y se etiqueta el contenido generado.', ref:'Art. 50 RIA, aplicable desde el 2 de agosto de 2026', imp:2, acc:'Añadir avisos de interacción con IA en chatbots y asistentes y etiquetar el contenido sintético (imágenes, audio, vídeo, texto público).' },
+    { id:'a9', t:'Existe un procedimiento para suspender el uso de un sistema y comunicar incidentes graves al proveedor y a la autoridad.', ref:'Art. 26.5 RIA', imp:2, acc:'Definir el procedimiento de suspensión e incidentes graves con contactos del proveedor y de la autoridad de vigilancia.' },
+  ]},
+  { id:'lab', nombre:'IA en el ámbito laboral y uso cotidiano', ref:'Anexo III.4 RIA; art. 64.4.d y 20 bis ET; arts. 87 a 91 LOPDGDD', q: [
+    { id:'w1', t:'La empresa conoce qué herramientas de IA generativa usa realmente su personal y con qué cuentas (corporativas o personales).', ref:'Art. 32 RGPD; art. 26 RIA', imp:3, acc:'Realizar un sondeo o inventario del uso real de IA por el personal y migrar a cuentas corporativas con configuración controlada.' },
+    { id:'w2', t:'Está prohibido o limitado introducir datos personales o información confidencial en herramientas de IA no autorizadas, y el personal lo conoce.', ref:'Arts. 5.1.f y 32 RGPD', imp:3, acc:'Incluir en la política de uso de IA la prohibición de introducir datos personales y confidenciales en herramientas no autorizadas; comunicarla y formar.' },
+    { id:'w3', t:'Se ha informado a la representación legal de los trabajadores de los algoritmos o sistemas de IA que afectan a la toma de decisiones sobre condiciones de trabajo, acceso al empleo o mantenimiento.', ref:'Art. 64.4.d ET; art. 26.7 RIA', imp:2, acc:'Informar por escrito a la RLT de los parámetros, reglas e instrucciones de los algoritmos que afectan a condiciones de trabajo.' },
+    { id:'w4', t:'El uso de IA en selección, evaluación, promoción, asignación de tareas o extinción se ha identificado como alto riesgo y se trata como tal.', ref:'Anexo III, punto 4 RIA; art. 22 RGPD', imp:3, acc:'Identificar los usos de IA en RRHH, clasificarlos como alto riesgo y aplicar supervisión humana, EIPD e información a candidatos y plantilla.' },
+    { id:'w5', t:'Las medidas de control laboral con IA (monitorización, videovigilancia, geolocalización, análisis de productividad) respetan los derechos digitales y se han informado.', ref:'Arts. 87 a 91 LOPDGDD; art. 20 bis ET', imp:2, acc:'Revisar cada medida de control con IA: necesidad, proporcionalidad, información previa a plantilla y RLT y criterios de uso.' },
+    { id:'w6', t:'No se utilizan sistemas de reconocimiento de emociones de los trabajadores ni categorización biométrica por datos sensibles.', ref:'Art. 5.1.f y g RIA', imp:3, acc:'Retirar de inmediato cualquier sistema de inferencia de emociones en el trabajo o de categorización biométrica por datos sensibles.' },
+    { id:'w7', t:'Las salidas de las herramientas de IA que afectan a personas se revisan antes de usarse y existe registro de uso de las herramientas corporativas.', ref:'Art. 5.1.d RGPD; arts. 14 y 26 RIA', imp:2, acc:'Establecer la revisión humana de las salidas con efectos sobre personas y activar los registros de uso en las herramientas corporativas.' },
+  ]},
+];
+
+const AMBITOS = [
+  ['rrhh', 'Recursos humanos: selección, evaluación, promoción, asignación de tareas o extinción', 'alto', 'Anexo III, punto 4'],
+  ['credito', 'Evaluación de solvencia o scoring crediticio de personas físicas', 'alto', 'Anexo III, punto 5.b'],
+  ['seguros', 'Tarificación o evaluación de riesgos en seguros de vida y salud', 'alto', 'Anexo III, punto 5.c'],
+  ['educacion', 'Educación: admisión, evaluación o supervisión de exámenes', 'alto', 'Anexo III, punto 3'],
+  ['biometria', 'Identificación o categorización biométrica de personas', 'alto', 'Anexo III, punto 1'],
+  ['esenciales', 'Acceso a prestaciones o servicios públicos esenciales, o triaje de emergencias', 'alto', 'Anexo III, punto 5'],
+  ['critica', 'Componente de seguridad en infraestructuras críticas (agua, gas, electricidad, tráfico)', 'alto', 'Anexo III, punto 2'],
+  ['chatbot', 'Atención al cliente o chatbot que interactúa con personas', 'transparencia', 'Art. 50.1'],
+  ['contenido', 'Generación de texto, imagen, audio o vídeo', 'transparencia', 'Art. 50.2 y 50.4'],
+  ['marketing', 'Marketing, segmentación o perfilado de clientes', 'minimo', 'Riesgo mínimo; revisar perfilado RGPD'],
+  ['videovig', 'Videovigilancia o análisis de imagen en instalaciones', 'minimo', 'Riesgo mínimo salvo biometría; revisar LOPDGDD'],
+  ['asistente', 'Asistente interno de productividad (redacción, resúmenes, código, análisis)', 'minimo', 'Riesgo mínimo; obligaciones de uso de datos RGPD'],
+  ['admin', 'Automatización administrativa o de documentos', 'minimo', 'Riesgo mínimo'],
+  ['salud', 'Diagnóstico o apoyo clínico (producto sanitario)', 'alto', 'Anexo I (producto sanitario) y art. 6.1'],
+  ['otro', 'Otro', 'minimo', 'Revisar manualmente'],
+];
+const PROHIB = [
+  ['emociones', 'Infiere emociones de trabajadores o estudiantes (salvo fines médicos o de seguridad)', 'Art. 5.1.f'],
+  ['biocat', 'Categoriza personas por biometría para deducir raza, opiniones, religión, afiliación sindical, orientación sexual', 'Art. 5.1.g'],
+  ['scraping', 'Crea o amplía bases de reconocimiento facial mediante extracción no selectiva de imágenes de internet o cámaras', 'Art. 5.1.e'],
+  ['social', 'Puntuación social de personas con trato perjudicial injustificado', 'Art. 5.1.c'],
+  ['manip', 'Técnicas subliminales, manipuladoras o que explotan vulnerabilidades (edad, discapacidad, situación económica)', 'Art. 5.1.a y b'],
+  ['predict', 'Predice la comisión de delitos basándose solo en perfilado o rasgos de personalidad', 'Art. 5.1.d'],
+];
+
+/* ===================== ESTADO ===================== */
+const KEY = 'radar-ia-datos-v1';
+let S = { meta: {}, systems: [], answers: {}, notes: {} };
+function load() { try { const r = localStorage.getItem(KEY); if (r) S = Object.assign({ meta: {}, systems: [], answers: {}, notes: {} }, JSON.parse(r)); } catch (e) {} }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+let uid = 1;
+function newSystem() { return { id: 'sys' + Date.now() + (uid++), nombre: '', proveedor: '', ambito: '', rol: 'despliegue', finalidad: '', datos: 'si', especiales: 'no', menores: 'no', decide: 'no', interactua: 'no', sintetico: 'no', ubicacion: 'ue', entrena: 'desconocido', contrato: 'no', supervision: 'no', prohib: [] }; }
+
+/* ===================== CLASIFICACIÓN ===================== */
+function clasificar(s) {
+  const out = { ia: '', iaRef: '', nivel: 'minimo', rgpd: [], alertas: [] };
+  const amb = AMBITOS.find(a => a[0] === s.ambito);
+  if (s.prohib && s.prohib.length) {
+    out.nivel = 'prohibido'; out.ia = 'Práctica prohibida';
+    out.iaRef = s.prohib.map(p => (PROHIB.find(x => x[0] === p) || [])[2]).filter(Boolean).join(', ') + ' RIA';
+    out.alertas.push({ lvl: 'crit', t: `"${s.nombre || 'Sistema sin nombre'}" realiza una práctica prohibida por el art. 5 del Reglamento de IA (${out.iaRef}). Debe cesar de inmediato. Sanción de hasta 35 millones de euros o el 7 % de la facturación (art. 99.3).` });
+  } else if (amb && amb[2] === 'alto') {
+    out.nivel = 'alto'; out.ia = 'Alto riesgo'; out.iaRef = amb[3] + ' RIA';
+    if (s.supervision === 'no') out.alertas.push({ lvl: 'high', t: `"${s.nombre || 'Sistema sin nombre'}" es de alto riesgo (${amb[3]}) y no tiene supervisión humana definida. Preparar las obligaciones del art. 26 RIA (supervisión, registros, información a plantilla y RLT) antes de la fecha de aplicación.` });
+    if (s.ambito === 'rrhh') out.rgpd.push('Informar a la RLT (art. 64.4.d ET) y a candidatos y plantilla (arts. 13 y 14 RGPD).');
+  } else if ((amb && amb[2] === 'transparencia') || s.interactua === 'si' || s.sintetico === 'si') {
+    out.nivel = 'transparencia'; out.ia = 'Obligaciones de transparencia'; out.iaRef = 'Art. 50 RIA';
+  } else {
+    out.nivel = 'minimo'; out.ia = 'Riesgo mínimo'; out.iaRef = amb ? amb[3] : 'Sin ámbito asignado';
+  }
+  if (s.ambito === 'asistente' || s.ambito === 'contenido') out.rgpd.push('Sistema basado en modelo de uso general: las obligaciones del modelo recaen en su proveedor (arts. 53 a 55 RIA); la empresa es responsable del despliegue.');
+  if (s.rol === 'proveedor') out.rgpd.push('La empresa actúa como proveedor: obligaciones de los arts. 16 y siguientes RIA si es de alto riesgo, y del art. 50.2 si genera contenido.');
+  if (s.datos === 'si') {
+    out.rgpd.push('Tratamiento de datos personales: incluir en el registro de actividades (art. 30) y asignar base jurídica (art. 6).');
+    if (s.contrato === 'no' && s.rol === 'despliegue') out.alertas.push({ lvl: 'high', t: `"${s.nombre || 'Sistema sin nombre'}" trata datos personales y no consta contrato del art. 28 RGPD con el proveedor${s.proveedor ? ' (' + s.proveedor + ')' : ''}.` });
+    if (s.entrena === 'si') out.alertas.push({ lvl: 'high', t: `El proveedor de "${s.nombre || 'Sistema sin nombre'}" usa los datos introducidos para entrenar sus modelos. Finalidad incompatible salvo base jurídica propia (arts. 5.1.b y 6.4 RGPD). Desactivar la opción o cambiar de plan contractual.` });
+    if (s.entrena === 'desconocido') out.rgpd.push('Comprobar en las condiciones del proveedor si usa los datos para entrenamiento y la retención de prompts.');
+    if (s.ubicacion === 'tercero') out.alertas.push({ lvl: 'high', t: `"${s.nombre || 'Sistema sin nombre'}" trata datos en un tercer país sin decisión de adecuación. Hace falta un instrumento del capítulo V RGPD (cláusulas tipo con evaluación de impacto de la transferencia).` });
+    if (s.ubicacion === 'adecuacion') out.rgpd.push('Transferencia amparada en decisión de adecuación: verificar que el proveedor está certificado (por ejemplo, Marco de Privacidad de Datos UE-EE. UU.).');
+    const eipd = [];
+    if (s.especiales === 'si') { eipd.push('categorías especiales'); out.alertas.push({ lvl: 'high', t: `"${s.nombre || 'Sistema sin nombre'}" trata categorías especiales de datos. Identificar la excepción del art. 9.2 RGPD y realizar EIPD.` }); }
+    if (s.menores === 'si') eipd.push('datos de menores');
+    if (s.decide === 'si') eipd.push('decisiones automatizadas o perfilado con efectos');
+    if (s.ambito === 'biometria') eipd.push('biometría');
+    if (s.ambito === 'videovig') eipd.push('vigilancia sistemática');
+    if (out.nivel === 'alto') eipd.push('nueva tecnología de alto riesgo');
+    if (eipd.length) out.rgpd.push('EIPD probablemente obligatoria (art. 35.3 RGPD y lista de la AEPD): ' + eipd.join(', ') + '.');
+    if (s.decide === 'si') {
+      out.rgpd.push('Decisión automatizada: aplicar el art. 22 RGPD (intervención humana, derecho a impugnar, información sobre la lógica).');
+      if (s.supervision === 'no') out.alertas.push({ lvl: 'crit', t: `"${s.nombre || 'Sistema sin nombre'}" toma decisiones con efectos sobre personas sin intervención humana significativa. Prohibido por el art. 22 RGPD salvo las excepciones del art. 22.2.` });
+    }
+  }
+  return out;
+}
+
+/* ===================== CÁLCULO ===================== */
+const PROB = { si: 1, parcial: 2, no: 3 };
+function nivelDe(score) { return score >= 75 ? 'muy-alto' : score >= 50 ? 'alto' : score >= 25 ? 'medio' : 'bajo'; }
+const NIVEL_TXT = { 'bajo': 'Bajo', 'medio': 'Medio', 'alto': 'Alto', 'muy-alto': 'Muy alto', 'na': 'Sin datos' };
+function calcular() {
+  const dims = DIMENSIONES.map(d => {
+    const items = d.q.map(q => { const a = S.answers[q.id]; if (!a || a === 'na') return null; const p = PROB[a]; return { q, a, p, i: q.imp, r: p * q.imp }; }).filter(Boolean);
+    const score = items.length ? Math.round((items.reduce((s, x) => s + x.r, 0) / items.length - 1) / 8 * 100) : null;
+    return { d, items, score, nivel: score === null ? 'na' : nivelDe(score) };
+  });
+  const con = dims.filter(x => x.score !== null);
+  const global = con.length ? Math.round(con.reduce((s, x) => s + x.score, 0) / con.length) : null;
+  const all = dims.flatMap(x => x.items);
+  const matrix = {}; all.forEach(x => { const k = x.p + '-' + x.i; matrix[k] = (matrix[k] || 0) + 1; });
+  const plan = all.filter(x => x.a !== 'si').sort((a, b) => b.r - a.r || b.i - a.i);
+  const total = DIMENSIONES.reduce((n, d) => n + d.q.length, 0);
+  const answered = Object.keys(S.answers).filter(k => S.answers[k]).length;
+  const alerts = [];
+  S.systems.forEach(s => clasificar(s).alertas.forEach(a => alerts.push(a)));
+  if (S.meta.dpd === 'no-dudoso') alerts.push({ lvl: 'high', t: 'Posible obligación de designar Delegado de Protección de Datos no atendida (art. 37 RGPD y art. 34 LOPDGDD). Documentar el análisis y, en su caso, designar y comunicar a la AEPD.' });
+  if (S.answers.p2 === 'no' && S.systems.some(s => clasificar(s).rgpd.some(t => t.startsWith('EIPD')))) alerts.push({ lvl: 'crit', t: 'Hay tratamientos que exigen evaluación de impacto y no se ha realizado (art. 35 RGPD). Es una infracción autónoma; realizar la EIPD antes de continuar con el tratamiento.' });
+  if (S.answers.a3 === 'no' || S.answers.w6 === 'no') alerts.push({ lvl: 'crit', t: 'No se ha verificado la ausencia de prácticas prohibidas o se usa reconocimiento de emociones en el trabajo (art. 5 RIA, en vigor desde el 2 de febrero de 2025). Revisar y cesar de inmediato.' });
+  if (S.answers.a4 === 'no') alerts.push({ lvl: 'warn', t: 'Sin alfabetización en IA del personal. Obligación del art. 4 RIA aplicable desde el 2 de febrero de 2025.' });
+  if (S.meta.rlt === 'si' && S.answers.w3 === 'no') alerts.push({ lvl: 'warn', t: 'Existe RLT y no se le ha informado de los algoritmos que afectan a condiciones de trabajo (art. 64.4.d ET).' });
+  const seen = new Set(); const uniq = alerts.filter(a => { if (seen.has(a.t)) return false; seen.add(a.t); return true; });
+  const order = { crit: 0, high: 1, warn: 2, info: 3 }; uniq.sort((a, b) => order[a.lvl] - order[b.lvl]);
+  return { dims, global, matrix, plan, total, answered, alerts: uniq };
+}
+
+/* ===================== RENDER ===================== */
+const $ = (s, r) => (r || document).querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('show'), 2200); }
+
+function renderMeta() {
+  ['cliente', 'sector', 'tamano', 'dpd', 'rlt', 'evaluador', 'fecha', 'interlocutor', 'alcance'].forEach(k => { const el = $('#m-' + k); if (el && el.value !== (S.meta[k] || '')) el.value = S.meta[k] || ''; });
+}
+function bindMeta() {
+  ['cliente', 'sector', 'tamano', 'dpd', 'rlt', 'evaluador', 'fecha', 'interlocutor', 'alcance'].forEach(k => { $('#m-' + k).addEventListener('input', e => { S.meta[k] = e.target.value; save(); }); });
+}
+
+function sel(id, name, val, opts) { return `<label class="f">${name}<select data-sys="${id}" data-k="${opts.k}">${opts.o.map(o => `<option value="${o[0]}" ${o[0] === val ? 'selected' : ''}>${o[1]}</option>`).join('')}</select></label>`; }
+const SN = [['si', 'Sí'], ['no', 'No']];
+function renderSystems() {
+  const box = $('#systems');
+  if (!S.systems.length) { box.innerHTML = '<p class="muted">Sin sistemas registrados. Añade el primero. Un ejemplo habitual: "ChatGPT (cuentas personales)", "Asistente de Microsoft 365", "Chatbot web", "Filtro de currículos del ATS".</p>'; return; }
+  box.innerHTML = S.systems.map((s, i) => {
+    const c = clasificar(s);
+    return `<div class="sys" data-id="${s.id}">
+      <div class="head"><h3>${i + 1}. ${esc(s.nombre) || 'Sistema sin nombre'}</h3><div class="cls"><span class="pill ${c.nivel === 'prohibido' ? 'muy-alto' : c.nivel === 'alto' ? 'alto' : c.nivel === 'transparencia' ? 'medio' : 'bajo'}">${c.ia}</span><span class="small">${esc(c.iaRef)}</span><button class="btn danger no-print" type="button" data-del="${s.id}">Eliminar</button></div></div>
+      <div class="grid three">
+        <label class="f">Nombre del sistema<input data-sys="${s.id}" data-k="nombre" value="${esc(s.nombre)}" placeholder="Ej. ChatGPT, Copilot, ATS con filtro"></label>
+        <label class="f">Proveedor<input data-sys="${s.id}" data-k="proveedor" value="${esc(s.proveedor)}" placeholder="Ej. OpenAI, Microsoft, desarrollo propio"></label>
+        ${sel(s.id, 'Papel de la empresa', s.rol, { k: 'rol', o: [['despliegue', 'Responsable del despliegue (lo usa)'], ['proveedor', 'Proveedor (lo desarrolla o comercializa)']] })}
+      </div>
+      <label class="f">Ámbito de uso principal<select data-sys="${s.id}" data-k="ambito"><option value="">Selecciona</option>${AMBITOS.map(a => `<option value="${a[0]}" ${a[0] === s.ambito ? 'selected' : ''}>${a[1]}</option>`).join('')}</select></label>
+      <label class="f">Finalidad concreta y personas afectadas<textarea data-sys="${s.id}" data-k="finalidad" placeholder="Qué hace, quién lo usa, sobre quién produce efectos">${esc(s.finalidad)}</textarea></label>
+      <div class="flags">
+        ${sel(s.id, '¿Trata datos personales?', s.datos, { k: 'datos', o: SN })}
+        ${sel(s.id, '¿Categorías especiales (salud, biometría, sindical...)?', s.especiales, { k: 'especiales', o: SN })}
+        ${sel(s.id, '¿Datos de menores?', s.menores, { k: 'menores', o: SN })}
+        ${sel(s.id, '¿Decide o perfila con efectos sobre personas?', s.decide, { k: 'decide', o: SN })}
+        ${sel(s.id, '¿Interactúa directamente con personas?', s.interactua, { k: 'interactua', o: SN })}
+        ${sel(s.id, '¿Genera contenido sintético (texto público, imagen, audio, vídeo)?', s.sintetico, { k: 'sintetico', o: SN })}
+        ${sel(s.id, 'Ubicación del tratamiento', s.ubicacion, { k: 'ubicacion', o: [['ue', 'UE o EEE'], ['adecuacion', 'País con decisión de adecuación'], ['tercero', 'Tercer país sin adecuación'], ['desconocido', 'Desconocida']] })}
+        ${sel(s.id, '¿El proveedor usa los datos para entrenar?', s.entrena, { k: 'entrena', o: [['no', 'No, contractualmente excluido'], ['si', 'Sí'], ['desconocido', 'Desconocido']] })}
+        ${sel(s.id, '¿Contrato del art. 28 RGPD con el proveedor?', s.contrato, { k: 'contrato', o: SN })}
+        ${sel(s.id, '¿Supervisión humana definida?', s.supervision, { k: 'supervision', o: SN })}
+      </div>
+      <div class="prohib"><div class="eyebrow">Comprobación de prácticas prohibidas (art. 5 RIA)</div>
+        ${PROHIB.map(p => `<label class="chk"><input type="checkbox" data-sys="${s.id}" data-p="${p[0]}" ${s.prohib.includes(p[0]) ? 'checked' : ''}><span>${p[1]} <span class="ref">(${p[2]})</span></span></label>`).join('')}
+      </div>
+      ${c.rgpd.length ? `<div class="alert info"><b>Efectos en el RGPD</b><ul style="margin:0;padding-left:18px">${c.rgpd.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>` : ''}
+      ${c.alertas.map(a => `<div class="alert ${a.lvl}">${esc(a.t)}</div>`).join('')}
+    </div>`;
+  }).join('');
+}
+function bindSystems() {
+  const box = $('#systems');
+  box.addEventListener('input', e => {
+    const id = e.target.dataset.sys; if (!id) return; const s = S.systems.find(x => x.id === id); if (!s) return;
+    if (e.target.dataset.p) { const p = e.target.dataset.p; s.prohib = e.target.checked ? [...new Set([...s.prohib, p])] : s.prohib.filter(x => x !== p); save(); renderSystems(); return; }
+    s[e.target.dataset.k] = e.target.value; save();
+    if (e.target.tagName === 'SELECT') renderSystems(); else if (e.target.dataset.k === 'nombre') { const h = $(`.sys[data-id="${id}"] h3`); if (h) h.textContent = (S.systems.indexOf(s) + 1) + '. ' + (s.nombre || 'Sistema sin nombre'); }
+  });
+  box.addEventListener('change', e => { if (e.target.dataset.sys && e.target.tagName !== 'SELECT' && !e.target.dataset.p) renderSystems(); });
+  box.addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (!b) return; S.systems = S.systems.filter(x => x.id !== b.dataset.del); save(); renderSystems(); });
+  $('#btn-add-sys').addEventListener('click', () => { S.systems.push(newSystem()); save(); renderSystems(); const last = box.lastElementChild; if (last) last.querySelector('input').focus(); });
+}
+
+function renderQuestions() {
+  $('#questions').innerHTML = DIMENSIONES.map(d => `<div class="card dim"><div><div class="eyebrow">${esc(d.ref)}</div><h3>${esc(d.nombre)}</h3></div>
+    ${d.q.map(q => { const a = S.answers[q.id] || ''; return `<div class="q" data-q="${q.id}">
+      <div class="txt"><span>${esc(q.t)}<span class="imp">impacto ${q.imp === 3 ? 'alto' : q.imp === 2 ? 'medio' : 'bajo'}</span></span><span class="ref">${esc(q.ref)}</span></div>
+      <div class="opts" role="group" aria-label="Respuesta">${[['si', 'Sí'], ['parcial', 'Parcial'], ['no', 'No'], ['na', 'No aplica']].map(o => `<button type="button" class="o-${o[0]}" data-a="${o[0]}" aria-pressed="${a === o[0]}">${o[1]}</button>`).join('')}</div>
+      <textarea class="note" id="note-${q.id}" placeholder="Evidencia o comentario (opcional)">${esc(S.notes[q.id] || '')}</textarea>
+    </div>`; }).join('')}</div>`).join('');
+  renderProgress();
+}
+function renderProgress() {
+  const total = DIMENSIONES.reduce((n, d) => n + d.q.length, 0); const n = Object.keys(S.answers).filter(k => S.answers[k]).length;
+  $('#prog').style.width = (n / total * 100) + '%'; $('#prog-txt').textContent = `${n} de ${total} respondidas`;
+}
+function bindQuestions() {
+  const box = $('#questions');
+  box.addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (!b) return; const q = b.closest('.q').dataset.q; S.answers[q] = S.answers[q] === b.dataset.a ? '' : b.dataset.a; save(); b.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.a === S.answers[q])); renderProgress(); });
+  box.addEventListener('input', e => { if (e.target.classList.contains('note')) { S.notes[e.target.closest('.q').dataset.q] = e.target.value; save(); } });
+}
+
+function renderResults() {
+  const R = calcular();
+  const g = R.global;
+  $('#tiles').innerHTML = `
+    <div class="tile"><span class="eyebrow">Riesgo global</span><span class="n">${g === null ? '–' : g}</span><span class="pill ${g === null ? 'na' : nivelDe(g)}">${g === null ? 'Sin datos' : NIVEL_TXT[nivelDe(g)]}</span></div>
+    <div class="tile"><span class="eyebrow">Controles respondidos</span><span class="n">${R.answered}<span class="small"> / ${R.total}</span></span><span class="small">"No aplica" no puntúa</span></div>
+    <div class="tile"><span class="eyebrow">Alertas críticas</span><span class="n">${R.alerts.filter(a => a.lvl === 'crit').length}</span><span class="small">${R.alerts.length} alertas en total</span></div>
+    <div class="tile"><span class="eyebrow">Sistemas de IA</span><span class="n">${S.systems.length}</span><span class="small">${S.systems.filter(s => clasificar(s).nivel === 'alto').length} de alto riesgo · ${S.systems.filter(s => clasificar(s).nivel === 'prohibido').length} prohibidos</span></div>`;
+  $('#alerts').innerHTML = R.alerts.length ? R.alerts.map(a => `<div class="alert ${a.lvl}"><b>${a.lvl === 'crit' ? 'Crítica' : a.lvl === 'high' ? 'Alta' : 'Atención'}</b>${esc(a.t)}</div>`).join('') : '<p class="muted">Sin alertas con los datos introducidos.</p>';
+  $('#bars').innerHTML = R.dims.map(x => `<div class="bar"><span title="${esc(x.d.ref)}">${esc(x.d.nombre)}</span><div class="track" aria-hidden="true"><i class="${x.nivel}" style="width:${x.score === null ? 0 : x.score}%"></i></div><span class="v">${x.score === null ? '–' : x.score} <span class="pill ${x.nivel}">${NIVEL_TXT[x.nivel]}</span></span></div>`).join('');
+  const seq = ['', 'var(--seq-1)', 'var(--seq-2)', 'var(--seq-3)', 'var(--seq-4)', 'var(--seq-5)'];
+  const lab = { 1: 'bajo', 2: 'medio', 3: 'alto' };
+  let m = '<div class="h"></div>' + [1, 2, 3].map(i => `<div class="h">Impacto ${lab[i]}</div>`).join('');
+  [3, 2, 1].forEach(p => { m += `<div class="h">Prob. ${lab[p]}</div>` + [1, 2, 3].map(i => { const n = R.matrix[p + '-' + i] || 0; const r = p * i; const step = r >= 9 ? 5 : r >= 6 ? 4 : r >= 4 ? 3 : r >= 2 ? 2 : 1; return `<div class="c" style="background:${n ? seq[step] : 'var(--surface)'};color:${step >= 4 && n ? '#fff' : 'var(--ink)'}" title="Probabilidad ${lab[p]} × impacto ${lab[i]} = ${r}">${n}<span style="${step >= 4 && n ? 'color:#fff;opacity:.8' : ''}">riesgo ${r}</span></div>`; }).join(''); });
+  $('#matrix').innerHTML = m;
+  $('#sys-table tbody').innerHTML = S.systems.length ? S.systems.map(s => { const c = clasificar(s); return `<tr><td><b>${esc(s.nombre) || 'Sin nombre'}</b><br><span class="small">${esc(s.proveedor)}</span></td><td>${c.ia}<br><span class="small">${esc(c.iaRef)}</span></td><td>${c.rgpd.length ? c.rgpd.map(esc).join('<br>') : '<span class="small">Sin efectos identificados</span>'}</td></tr>`; }).join('') : '<tr><td colspan="3" class="muted">Sin sistemas registrados.</td></tr>';
+  $('#plan tbody').innerHTML = R.plan.length ? R.plan.map((x, i) => `<tr><td>${i + 1}</td><td><span class="pill ${x.r >= 9 ? 'muy-alto' : x.r >= 6 ? 'alto' : x.r >= 3 ? 'medio' : 'bajo'}">${x.r}</span></td><td>${esc(x.q.acc)}${S.notes[x.q.id] ? `<br><span class="small">Nota: ${esc(S.notes[x.q.id])}</span>` : ''}</td><td class="small">${esc(x.q.ref)}</td><td>${x.r >= 9 ? 'Inmediato' : x.r >= 6 ? '30 días' : '90 días'}</td></tr>`).join('') : '<tr><td colspan="5" class="muted">Sin deficiencias registradas o cuestionario sin responder.</td></tr>';
+  return R;
+}
+
+function fechaES(v) { if (!v) return new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }); const d = new Date(v + 'T00:00:00'); return isNaN(d) ? v : d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }); }
+function textoNivel(n) { return { 'bajo': 'mantener los controles y revisar anualmente', 'medio': 'ejecutar un plan de mejora en 90 días', 'alto': 'ejecutar un plan de mejora en 30 días con seguimiento de la dirección', 'muy-alto': 'actuar de inmediato y valorar asesoramiento jurídico o del DPD' }[n] || 'completar el cuestionario'; }
+function renderInforme() {
+  const R = calcular(); const M = S.meta; const g = R.global;
+  const html = `
+    <div class="eyebrow">Informe de análisis de riesgo · uso de IA y tratamiento de datos personales</div>
+    <h2>${esc(M.cliente) || 'Cliente sin nombre'}</h2>
+    <p><b>Fecha:</b> ${fechaES(M.fecha)}. <b>Evaluación realizada por:</b> ${esc(M.evaluador) || 'otraforma'}. <b>Interlocutor:</b> ${esc(M.interlocutor) || 'no indicado'}. <b>Sector:</b> ${esc(M.sector) || 'no indicado'}. <b>Plantilla:</b> ${esc(M.tamano) || 'no indicada'}.</p>
+    ${M.alcance ? `<p><b>Alcance:</b> ${esc(M.alcance)}</p>` : ''}
+    <h3>1. Resumen ejecutivo</h3>
+    <p>El nivel de riesgo global es <b>${g === null ? 'no calculable (cuestionario sin responder)' : NIVEL_TXT[nivelDe(g)].toLowerCase() + ' (' + g + ' sobre 100)'}</b>. ${g === null ? '' : 'La recomendación general es ' + textoNivel(nivelDe(g)) + '.'} Se han identificado ${R.alerts.length} alertas, de las que ${R.alerts.filter(a => a.lvl === 'crit').length} son críticas, y ${R.plan.length} acciones de mejora. Se han inventariado ${S.systems.length} sistemas de IA.</p>
+    <h3>2. Alertas críticas</h3>
+    ${R.alerts.length ? `<ul>${R.alerts.map(a => `<li><b>${a.lvl === 'crit' ? 'Crítica.' : a.lvl === 'high' ? 'Alta.' : 'Atención.'}</b> ${esc(a.t)}</li>`).join('')}</ul>` : '<p>No se han detectado alertas críticas con la información disponible.</p>'}
+    <h3>3. Resultado por dimensión</h3>
+    <div class="tbl"><table><thead><tr><th>Dimensión</th><th>Puntuación</th><th>Nivel</th><th>Marco</th></tr></thead><tbody>${R.dims.map(x => `<tr><td>${esc(x.d.nombre)}</td><td>${x.score === null ? '–' : x.score}</td><td>${NIVEL_TXT[x.nivel]}</td><td>${esc(x.d.ref)}</td></tr>`).join('')}</tbody></table></div>
+    <h3>4. Inventario y clasificación de sistemas de IA</h3>
+    ${S.systems.length ? `<div class="tbl"><table><thead><tr><th>Sistema</th><th>Proveedor</th><th>Papel</th><th>Clasificación RIA</th><th>Efectos RGPD</th></tr></thead><tbody>${S.systems.map(s => { const c = clasificar(s); const amb = AMBITOS.find(a => a[0] === s.ambito); return `<tr><td>${esc(s.nombre) || 'Sin nombre'}${amb ? '<br><span class="small">' + esc(amb[1]) + '</span>' : ''}</td><td>${esc(s.proveedor)}</td><td>${s.rol === 'proveedor' ? 'Proveedor' : 'Responsable del despliegue'}</td><td>${c.ia} (${esc(c.iaRef)})</td><td>${c.rgpd.map(esc).join(' ') || '–'}</td></tr>`; }).join('')}</tbody></table></div>` : '<p>No se han inventariado sistemas de IA.</p>'}
+    <h3>5. Plan de acción</h3>
+    ${R.plan.length ? `<div class="tbl"><table><thead><tr><th>#</th><th>Riesgo</th><th>Acción</th><th>Referencia</th><th>Plazo</th></tr></thead><tbody>${R.plan.map((x, i) => `<tr><td>${i + 1}</td><td>${x.r}</td><td>${esc(x.q.acc)}${S.notes[x.q.id] ? '<br><span class="small">Evidencia: ' + esc(S.notes[x.q.id]) + '</span>' : ''}</td><td>${esc(x.q.ref)}</td><td>${x.r >= 9 ? 'Inmediato' : x.r >= 6 ? '30 días' : '90 días'}</td></tr>`).join('')}</tbody></table></div>` : '<p>No hay acciones pendientes con las respuestas registradas.</p>'}
+    <h3>6. Controles verificados</h3>
+    <p>${R.dims.flatMap(x => x.items).filter(x => x.a === 'si').length} controles cumplen. ${DIMENSIONES.flatMap(d => d.q).filter(q => S.answers[q.id] === 'na').length} se han marcado como no aplicables. ${R.total - R.answered} quedan sin responder.</p>
+    <h3>7. Metodología y marco normativo</h3>
+    <p>Riesgo de cada control: probabilidad (según la respuesta) × impacto (fijo por control), de 1 a 9, conforme al enfoque de la guía de la AEPD sobre gestión del riesgo y evaluación de impacto (2021). Puntuación por dimensión y global en escala de 0 a 100. Marco: Reglamento (UE) 2016/679, Ley Orgánica 3/2018, Reglamento (UE) 2024/1689 y su modificación por el Reglamento (UE) 2026/1744 en cuanto a los plazos de los sistemas de alto riesgo, Estatuto de los Trabajadores (arts. 20 bis y 64.4.d) y guías de la AEPD y del CEPD. El Proyecto de Ley Orgánica para el buen uso y la gobernanza de la inteligencia artificial se encuentra en tramitación parlamentaria y no se ha aplicado como norma vigente.</p>
+    <p>Este informe es una evaluación preliminar basada en la información facilitada por el cliente en la fecha indicada. No sustituye una evaluación de impacto formal ni el dictamen jurídico que el caso pueda requerir.</p>
+    <div class="foot">Elaborado por otraforma · ${fechaES(M.fecha)}</div>`;
+  $('#informe').innerHTML = html;
+  return R;
+}
+function informeTexto() {
+  const R = calcular(); const M = S.meta; const g = R.global; const L = [];
+  L.push(`INFORME DE ANÁLISIS DE RIESGO · USO DE IA Y TRATAMIENTO DE DATOS PERSONALES`);
+  L.push(`Cliente: ${M.cliente || 'sin nombre'} | Fecha: ${fechaES(M.fecha)} | Evaluador: ${M.evaluador || 'otraforma'} | Sector: ${M.sector || '-'} | Plantilla: ${M.tamano || '-'}`);
+  if (M.alcance) L.push(`Alcance: ${M.alcance}`);
+  L.push('', '1. RESUMEN EJECUTIVO', `Riesgo global: ${g === null ? 'no calculable' : NIVEL_TXT[nivelDe(g)] + ' (' + g + '/100)'}. ${g === null ? '' : 'Recomendación: ' + textoNivel(nivelDe(g)) + '.'} Alertas: ${R.alerts.length} (${R.alerts.filter(a => a.lvl === 'crit').length} críticas). Acciones: ${R.plan.length}. Sistemas de IA: ${S.systems.length}.`);
+  L.push('', '2. ALERTAS'); R.alerts.length ? R.alerts.forEach(a => L.push(`- [${a.lvl === 'crit' ? 'CRÍTICA' : a.lvl === 'high' ? 'ALTA' : 'ATENCIÓN'}] ${a.t}`)) : L.push('Sin alertas.');
+  L.push('', '3. RESULTADO POR DIMENSIÓN'); R.dims.forEach(x => L.push(`- ${x.d.nombre}: ${x.score === null ? '-' : x.score}/100 (${NIVEL_TXT[x.nivel]}) · ${x.d.ref}`));
+  L.push('', '4. SISTEMAS DE IA'); S.systems.length ? S.systems.forEach(s => { const c = clasificar(s); L.push(`- ${s.nombre || 'Sin nombre'} (${s.proveedor || 'proveedor no indicado'}; ${s.rol === 'proveedor' ? 'proveedor' : 'responsable del despliegue'}): ${c.ia}, ${c.iaRef}.` + (c.rgpd.length ? ' RGPD: ' + c.rgpd.join(' ') : '')); }) : L.push('Sin sistemas inventariados.');
+  L.push('', '5. PLAN DE ACCIÓN'); R.plan.length ? R.plan.forEach((x, i) => L.push(`${i + 1}. [riesgo ${x.r}, ${x.r >= 9 ? 'inmediato' : x.r >= 6 ? '30 días' : '90 días'}] ${x.q.acc} (${x.q.ref})` + (S.notes[x.q.id] ? ` Evidencia: ${S.notes[x.q.id]}` : ''))) : L.push('Sin acciones pendientes.');
+  L.push('', '6. METODOLOGÍA', 'Riesgo = probabilidad (según respuesta) × impacto (fijo por control), 1 a 9, conforme a la guía de la AEPD de gestión del riesgo y EIPD (2021). Escala 0 a 100 por dimensión. Marco: RGPD, LOPDGDD, Reglamento (UE) 2024/1689 modificado por el Reglamento (UE) 2026/1744 en los plazos de alto riesgo, Estatuto de los Trabajadores y guías de la AEPD y del CEPD.', 'Evaluación preliminar basada en la información facilitada por el cliente. No sustituye una EIPD formal ni el dictamen jurídico.', '', `Elaborado por otraforma · ${fechaES(M.fecha)}`);
+  return L.join('\n');
+}
+
+/* ===================== NAVEGACIÓN Y ACCIONES ===================== */
+function show(tab) {
+  document.querySelectorAll('[role="tab"]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab));
+  ['cliente', 'inventario', 'cuestionario', 'resultados', 'informe', 'metodologia'].forEach(t => { $('#tab-' + t).hidden = t !== tab; });
+  if (tab === 'resultados') renderResults(); if (tab === 'informe') renderInforme();
+  window.scrollTo({ top: 0, behavior: 'auto' });
+}
+document.querySelectorAll('[role="tab"]').forEach(b => b.addEventListener('click', () => show(b.dataset.tab)));
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => show(b.dataset.go)));
+
+$('#btn-nueva').addEventListener('click', () => {
+  const b = $('#btn-nueva');
+  if (b.dataset.confirm) { S = { meta: { fecha: new Date().toISOString().slice(0, 10) }, systems: [], answers: {}, notes: {} }; save(); renderMeta(); renderSystems(); renderQuestions(); show('cliente'); delete b.dataset.confirm; b.textContent = 'Nueva evaluación'; toast('Evaluación reiniciada'); return; }
+  b.dataset.confirm = '1'; b.textContent = 'Confirmar: borrar todo'; setTimeout(() => { delete b.dataset.confirm; b.textContent = 'Nueva evaluación'; }, 4000);
+});
+$('#btn-exportar').addEventListener('click', async () => {
+  const json = JSON.stringify(S, null, 2); const name = `radar-ia-${(S.meta.cliente || 'evaluacion').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.json`;
+  try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); } catch (e) {}
+  try { await navigator.clipboard.writeText(json); toast('JSON descargado y copiado al portapapeles'); } catch (e) { toast('Si no se ha descargado, abre el archivo HTML localmente para exportar'); }
+});
+$('#file-importar').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return; const r = new FileReader();
+  r.onload = () => { try { const d = JSON.parse(r.result); if (!d || typeof d !== 'object' || !('answers' in d)) throw 0; S = Object.assign({ meta: {}, systems: [], answers: {}, notes: {} }, d); S.systems.forEach(s => { if (!Array.isArray(s.prohib)) s.prohib = []; }); save(); renderMeta(); renderSystems(); renderQuestions(); show('cliente'); toast('Evaluación importada'); } catch (err) { toast('El archivo no es una evaluación válida'); } e.target.value = ''; };
+  r.readAsText(f);
+});
+$('#btn-copiar').addEventListener('click', async () => { const t = informeTexto(); try { await navigator.clipboard.writeText(t); toast('Informe copiado'); } catch (e) { const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); toast('Informe copiado'); } catch (e2) { toast('No se pudo copiar; selecciona el texto manualmente'); } ta.remove(); } });
+$('#btn-imprimir').addEventListener('click', () => { try { window.print(); } catch (e) {} });
+
+/* ===================== ARRANQUE ===================== */
+load();
+if (!S.meta.fecha) S.meta.fecha = new Date().toISOString().slice(0, 10);
+renderMeta(); bindMeta(); renderSystems(); bindSystems(); renderQuestions(); bindQuestions();
+</script>
+</body>
+</html>
