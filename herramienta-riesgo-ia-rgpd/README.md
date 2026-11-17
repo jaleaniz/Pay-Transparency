@@ -39,7 +39,7 @@ Guardado: la evaluación se autoguarda en el navegador. Para archivarla por clie
 ## Fechas normativas incorporadas (revisar periódicamente)
 
 - Reglamento (UE) 2024/1689: prohibiciones y alfabetización en IA desde el 2 de febrero de 2025; modelos de uso general desde el 2 de agosto de 2025; transparencia (art. 50) desde el 2 de agosto de 2026.
-- Reglamento (UE) 2026/1744 (Ómnibus digital): alto riesgo del Anexo III desde el 2 de diciembre de 2027 y del Anexo I desde el 2 de agosto de 2028. Pendiente de verificar en EUR-Lex: en el momento de construir la herramienta solo se pudo contrastar con fuentes secundarias.
+- Reglamento (UE) 2026/1744 (Ómnibus digital sobre IA): adoptado el 8 de julio de 2026, publicado en el DOUE el 24 de julio y en vigor desde el 27 de julio de 2026. Aplaza el alto riesgo del Anexo III al 2 de diciembre de 2027 y el del Anexo I al 2 de agosto de 2028.
 - Proyecto de Ley Orgánica para el buen uso y la gobernanza de la inteligencia artificial (expediente 121/000096): en tramitación en el Congreso en noviembre de 2026. No es norma vigente.
 
 ## Mantenimiento
