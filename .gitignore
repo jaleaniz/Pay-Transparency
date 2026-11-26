@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+.streamlit/secrets.toml
+# Ficheros con datos reales o tablas de correspondencia: nunca al repositorio
+data/*
+!data/empleados_demo.xlsx
+*_CONFIDENCIAL*.xlsx
